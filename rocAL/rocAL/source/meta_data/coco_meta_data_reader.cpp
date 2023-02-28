@@ -27,12 +27,20 @@ THE SOFTWARE.
 #include <fstream>
 #include "lookahead_parser.h"
 
+
 using namespace std;
+
+// typedef unsigned int uint;
+// typedef unsigned long siz;
+
+// typedef struct { siz h, w, m; string str_rle; } RLESTR;
+// typedef struct { siz h, w, m; std::vector<uint32_t> cnts; } RLEINT;
 
 void COCOMetaDataReader::init(const MetaDataConfig &cfg)
 {
     _path = cfg.path();
     _mask = cfg.mask();
+    //std::cout << "reach 36-->"<< _mask <<std::endl;
     _output = new BoundingBoxBatch();
 }
 
@@ -83,6 +91,56 @@ void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords,
     pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count);
     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
 }
+
+// void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size,
+//             MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLESTR rleSTR)
+// {
+//     if (exists(image_name))
+//     {
+//         //std::cout << "image_name-->"<< image_name << std::endl;
+//         auto it = _map_content.find(image_name);
+//         //std::cout << "it->first->->"<< it->first << std::endl;
+        
+//         it->second->get_bb_cords().push_back(bb_coords[0]);
+//         it->second->get_bb_labels().push_back(bb_labels[0]);
+//         it->second->get_mask_cords().insert(it->second->get_mask_cords().end(), mask_cords.begin(), mask_cords.end());
+//         it->second->get_polygon_count().push_back(polygon_count[0]);
+//         it->second->get_vertices_count().push_back(vertices_count[0]);
+//         it->second->get_rleSTR_count() = rleSTR;
+//         //std::cout << "it->get_rleSTR_count->->"<< it->second->get_rleSTR_count().str_rle << std::endl;
+//         return;
+//     }
+//     //std::cout << " reach 108 --> "<< std::endl;
+//     pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count, rleSTR);
+
+//     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
+// }
+
+// void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size,
+//             MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLEINT rleINT)
+// {
+//     std::cout << "reach 121-->" << std::endl;
+//     if (exists(image_name))
+//     {
+//         std::cout << "image_name-->"<< image_name << std::endl;
+//         auto it = _map_content.find(image_name);
+//         //std::cout << "it->first->->"<< it->first << std::endl;
+        
+//         it->second->get_bb_cords().push_back(bb_coords[0]);
+//         it->second->get_bb_labels().push_back(bb_labels[0]);
+//         it->second->get_mask_cords().insert(it->second->get_mask_cords().end(), mask_cords.begin(), mask_cords.end());
+//         it->second->get_polygon_count().push_back(polygon_count[0]);
+//         it->second->get_vertices_count().push_back(vertices_count[0]);
+//         it->second->get_rleINT_count() = rleINT;
+//         //std::cout << "it->get_rleINT_count vector->->"<< it->second->get_rleINT_count().cnts[0] <<  it->second->get_rleINT_count().cnts[1] <<  it->second->get_rleINT_count().cnts[2] <<std::endl;
+
+//         return;
+//     }
+//     //std::cout << " reach 136 --> "<< std::endl;
+//     pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count, rleINT);
+
+//     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
+// }
 
 void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size)
 {
@@ -141,27 +199,33 @@ void COCOMetaDataReader::print_map_contents()
 
 void COCOMetaDataReader::read_all(const std::string &path)
 {
+    //std::cout << "reach 144" << std::endl;
     _coco_metadata_read_time.start(); // Debug timing
     std::ifstream f;
+    // open json path
     f.open (path, std::ifstream::in|std::ios::binary);
     if (f.fail()) THROW("ERROR: Given annotations file not present " + path);
+    // 
     f.ignore( std::numeric_limits<std::streamsize>::max() );
     auto file_size = f.gcount();
+    // clear
     f.clear();   //  Since ignore will have set eof.
     if (file_size == 0)
     { // If file is empty return
         f.close();
         THROW("ERROR: Given annotations file not valid " + path);
     }
+    // initialize buffer
     std::unique_ptr<char, std::function<void(char *)>> buff(
         new char[file_size + 1],
         [](char *data)
         { delete[] data; });
     f.seekg(0, std::ios::beg);
     buff.get()[file_size] = '\0';
+    // read file
     f.read(buff.get(), file_size);
     f.close();
-
+    // initalize arrays
     LookaheadParser parser(buff.get());
 
     BoundingBoxCords bb_coords;
@@ -170,13 +234,18 @@ void COCOMetaDataReader::read_all(const std::string &path)
     std::vector<int> polygon_count;
     int polygon_size = 0;
     std::vector<std::vector<int>> vertices_count;
+    std::string rle_str;
+    std::vector<uint32_t> rle_uints;
 
     BoundingBoxCord box;
     ImgSize img_size;
     RAPIDJSON_ASSERT(parser.PeekType() == kObjectType);
     parser.EnterObject();
+    bool output_pixelwise_mask = true;
+    int p_mask_h =-1,p_mask_w=-1;
+    // keys are checked - rapidjson give key and value
     while (const char *key = parser.NextObjectKey())
-    {
+    {   
         if (0 == std::strcmp(key, "images"))
         {
             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
@@ -239,8 +308,10 @@ void COCOMetaDataReader::read_all(const std::string &path)
                 continuous_idx++;
             }
         }
+
         else if (0 == std::strcmp(key, "annotations"))
         {
+            //std::cout << "reach 253" << std::endl;
             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
             parser.EnterArray();
             while (parser.NextArrayValue())
@@ -281,30 +352,76 @@ void COCOMetaDataReader::read_all(const std::string &path)
                     }
                     else if (_mask && 0 == std::strcmp(internal_key, "segmentation"))
                     {
+                        //std::cout << "reach 295" << std::endl;
                         if (parser.PeekType() == kObjectType)
                         {
                             parser.EnterObject();
-                            const char *key = parser.NextObjectKey();
-                            if (0 == std::strcmp(key, "counts"))
-                            {
-                                parser.SkipArray();
+                            //std::cout << "reach 299" << std::endl;
+                            while(const char *key = parser.NextObjectKey()){
+                                //std::cout << "301--> " << key << std::endl;
+                                
+                                if (0 == std::strcmp(key, "size"))
+                                { 
+                                    RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
+                                    parser.EnterArray();
+                                    parser.NextArrayValue();
+                                    p_mask_h = parser.GetInt();
+                                    parser.NextArrayValue();
+                                    p_mask_w = parser.GetInt();
+                                    parser.NextArrayValue();
+
+                                }
+                                //const char *keyN = parser.NextObjectKey();
+                                // std::cout << "315--> " << keyN << std::endl;
+                                else if (0 == std::strcmp(key, "counts"))
+                                {
+                                    //std::cout << "reach 303" << std::endl;
+                                    //parser.SkipArray();
+                                    // 1. check what type it is string or uint and then take in and 
+                                    // 2. store in a vector at last
+                                    if (parser.PeekType() == kStringType) {
+                                        rle_str = parser.GetString();
+                                        //std::cout << "rle str-"<<rle_str<<std::endl;
+                                        std::cout << " rleustr-- " << "reach" << std::endl;
+                                    } else if (parser.PeekType() == kArrayType) {
+                                        parser.EnterArray();
+                                        std::cout << " rleuint-- " << "reach" << std::endl;
+                                        while (parser.NextArrayValue()) {
+                                            int rleuint = parser.GetInt();
+                                            
+                                            rle_uints.push_back(rleuint);
+                                        }
+                                    } else {
+                                        parser.SkipValue();
+                                    }
+                                } else {
+                                    parser.SkipValue();
+                                }
+
+                            
                             }
                         }
                         else
                         {
+                            //std::cout << "reach 322" << std::endl;
                             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
                             parser.EnterArray();
                             while (parser.NextArrayValue())
                             {
+                                //std::cout << "reach 350" << std::endl;
                                 polygon_size += 1;
                                 int vertex_count = 0;
                                 parser.EnterArray();
                                 while (parser.NextArrayValue())
                                 {
-                                    
-                                    mask.push_back(parser.GetDouble());
+                                    // mask is being read here
+                                    double val = parser.GetDouble();
+                                    //std::cout << "val--"<< val << std::endl;
+                                    mask.push_back(val);
                                     vertex_count += 1;
                                 }
+                                // vertex is counted and pushed
+                                //std::cout << "vertex_count--"<< vertex_count << std::endl;
                                 vertices_array.push_back(vertex_count);
                             }
                         }
@@ -321,8 +438,9 @@ void COCOMetaDataReader::read_all(const std::string &path)
 
                 auto it = _map_img_sizes.find(file_name);
                 ImgSize image_size = it->second; //Normalizing the co-ordinates & convert to "ltrb" format                                
-                if (_mask && iscrowd == 0)
-                {
+                
+                if (output_pixelwise_mask) {
+                    // conversion to ltrb
                     box.l = bbox[0] / image_size.w;
                     box.t = bbox[1] / image_size.h;
                     box.r = (bbox[0] + bbox[2] - 1) / image_size.w;
@@ -331,7 +449,66 @@ void COCOMetaDataReader::read_all(const std::string &path)
                     bb_labels.push_back(label);
                     polygon_count.push_back(polygon_size);
                     vertices_count.push_back(vertices_array);
+
+                    // RLESTR rtSTR;
+                    // RLEINT rtINT;
+                    RLE RLEObject;
+                    
+                    // std::cout << " !rle_str.empty() "<< !rle_str.empty() << std::endl;
+                    // std::cout << " !rle_uints.empty() "<< !rle_uints.empty() << std::endl;
+                    //rle_uints, rlestr , w , h should be copied to 
+                    if (!rle_str.empty()) {
+                        // shared pointer is made with RLEMask type either string or unit is stored in annotation.rle_
+                        //std::cout << "reach 457-->" << std::endl;
+                        rleFrString(&RLEObject, const_cast<char*>(rle_str.c_str()) , p_mask_h, p_mask_w);
+                        //std::cout << "height-->" << RLEObject.h << std::endl;
+                        //std::shared_ptr<RLESTR> pixelRLESTR = std::make_shared<RLESTR>(p_mask_h, p_mask_w, rle_str.c_str());
+                        // rtSTR.h = p_mask_h;
+                        // rtSTR.w = p_mask_w;
+                        // rtSTR.str_rle = rle_str.c_str();
+                        // add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count, rtSTR);
+                    } else if (!rle_uints.empty()) {
+                        //auto counts_rle = std::span(rle_uints);
+                        rleInit(&RLEObject, p_mask_h, p_mask_w, sizeof(rle_uints)/sizeof(rle_uints[0]), const_cast<uint*>(rle_uints.data()));
+
+                        //std::shared_ptr<RLEINT> pixelRLEINT = std::make_shared<RLEINT>(p_mask_h, p_mask_w, rle_uints);
+                        // std::cout << "reach 463-->" << std::endl;
+                        // rtINT.h = p_mask_h;
+                        // rtINT.w = p_mask_w;
+                        // rtINT.cnts = rle_uints;
+                        // add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count, rtINT);
+                    } else {
+                        std::cout << "Missing or invalid ``counts`` attribute." << std::endl;
+                    }
+                    
+                
+                    // all are cleared for next iteration
+                    mask.clear();
+                    polygon_size = 0;
+                    polygon_count.clear();
+                    vertices_count.clear();
+                    vertices_array.clear();
+                    bb_coords.clear();
+                    bb_labels.clear();
+                    rle_uints.clear();
+                    rle_str="";
+                
+                } 
+                else if (_mask && iscrowd == 0)
+                {
+                    // conversion to ltrb
+                    box.l = bbox[0] / image_size.w;
+                    box.t = bbox[1] / image_size.h;
+                    box.r = (bbox[0] + bbox[2] - 1) / image_size.w;
+                    box.b = (bbox[1] + bbox[3] - 1) / image_size.h;
+                    bb_coords.push_back(box);
+                    bb_labels.push_back(label);
+                    polygon_count.push_back(polygon_size);
+                    vertices_count.push_back(vertices_array);
+                    
                     add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count);
+                    
+                    // all are cleared for next iteration
                     mask.clear();
                     polygon_size = 0;
                     polygon_count.clear();
