@@ -101,8 +101,8 @@ struct MetaData
     ImgSize& get_img_size() { return _img_size; }
     const JointsData& get_joints_data(){ return _joints_data; }
     MaskCords& get_mask_cords() { return _mask_cords;}
-    RLESTR get_rleSTR_count() { return _rleStrVec; }
-    RLEINT get_rleINT_count() { return _rleIntVec; }
+    // RLESTR get_rleSTR_count() { return _rleStrVec; }
+    // RLEINT get_rleINT_count() { return _rleIntVec; }
 protected:
     BoundingBoxCords _bb_cords = {}; // For bb use
     BoundingBoxCords_xcycwh _bb_cords_xcycwh = {}; // For bb use
@@ -113,8 +113,8 @@ protected:
     MaskCords _mask_cords = {};
     std::vector<int> _polygon_count = {};
     std::vector<std::vector<int>> _vertices_count = {};
-    RLESTR _rleStrVec = {}; // to store RLE
-    RLEINT _rleIntVec = {}; // to store RLE
+    // RLESTR _rleStrVec = {}; // to store RLE
+    // RLEINT _rleIntVec = {}; // to store RLE
 };
 
 struct Label : public MetaData
@@ -145,29 +145,6 @@ struct BoundingBox : public MetaData
         _mask_cords = std::move(mask_cords);
         _polygon_count = std::move(polygon_count);
         _vertices_count = std::move(vertices_count);
-    }
-
-    BoundingBox(BoundingBoxCords bb_cords,BoundingBoxLabels bb_label_ids ,ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLESTR rlestrvalue)
-    {
-        _bb_cords =std::move(bb_cords);
-        _bb_label_ids = std::move(bb_label_ids);
-        _img_size = std::move(img_size);
-        _mask_cords = std::move(mask_cords);
-        _polygon_count = std::move(polygon_count);
-        _vertices_count = std::move(vertices_count);
-        _rleStrVec = std::move(rlestrvalue);
-    }
-
-
-    BoundingBox(BoundingBoxCords bb_cords,BoundingBoxLabels bb_label_ids ,ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLEINT rleintvalue)
-    {
-        _bb_cords =std::move(bb_cords);
-        _bb_label_ids = std::move(bb_label_ids);
-        _img_size = std::move(img_size);
-        _mask_cords = std::move(mask_cords);
-        _polygon_count = std::move(polygon_count);
-        _vertices_count = std::move(vertices_count);
-        _rleIntVec = std::move(rleintvalue);
     }
 
     void set_bb_cords(BoundingBoxCords bb_cords) { _bb_cords =std::move(bb_cords); }

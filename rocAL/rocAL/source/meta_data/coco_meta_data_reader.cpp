@@ -30,11 +30,6 @@ THE SOFTWARE.
 
 using namespace std;
 
-// typedef unsigned int uint;
-// typedef unsigned long siz;
-
-// typedef struct { siz h, w, m; string str_rle; } RLESTR;
-// typedef struct { siz h, w, m; std::vector<uint32_t> cnts; } RLEINT;
 
 void COCOMetaDataReader::init(const MetaDataConfig &cfg)
 {
@@ -92,55 +87,6 @@ void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords,
     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
 }
 
-// void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size,
-//             MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLESTR rleSTR)
-// {
-//     if (exists(image_name))
-//     {
-//         //std::cout << "image_name-->"<< image_name << std::endl;
-//         auto it = _map_content.find(image_name);
-//         //std::cout << "it->first->->"<< it->first << std::endl;
-        
-//         it->second->get_bb_cords().push_back(bb_coords[0]);
-//         it->second->get_bb_labels().push_back(bb_labels[0]);
-//         it->second->get_mask_cords().insert(it->second->get_mask_cords().end(), mask_cords.begin(), mask_cords.end());
-//         it->second->get_polygon_count().push_back(polygon_count[0]);
-//         it->second->get_vertices_count().push_back(vertices_count[0]);
-//         it->second->get_rleSTR_count() = rleSTR;
-//         //std::cout << "it->get_rleSTR_count->->"<< it->second->get_rleSTR_count().str_rle << std::endl;
-//         return;
-//     }
-//     //std::cout << " reach 108 --> "<< std::endl;
-//     pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count, rleSTR);
-
-//     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
-// }
-
-// void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size,
-//             MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count, RLEINT rleINT)
-// {
-//     std::cout << "reach 121-->" << std::endl;
-//     if (exists(image_name))
-//     {
-//         std::cout << "image_name-->"<< image_name << std::endl;
-//         auto it = _map_content.find(image_name);
-//         //std::cout << "it->first->->"<< it->first << std::endl;
-        
-//         it->second->get_bb_cords().push_back(bb_coords[0]);
-//         it->second->get_bb_labels().push_back(bb_labels[0]);
-//         it->second->get_mask_cords().insert(it->second->get_mask_cords().end(), mask_cords.begin(), mask_cords.end());
-//         it->second->get_polygon_count().push_back(polygon_count[0]);
-//         it->second->get_vertices_count().push_back(vertices_count[0]);
-//         it->second->get_rleINT_count() = rleINT;
-//         //std::cout << "it->get_rleINT_count vector->->"<< it->second->get_rleINT_count().cnts[0] <<  it->second->get_rleINT_count().cnts[1] <<  it->second->get_rleINT_count().cnts[2] <<std::endl;
-
-//         return;
-//     }
-//     //std::cout << " reach 136 --> "<< std::endl;
-//     pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count, rleINT);
-
-//     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
-// }
 
 void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size)
 {
@@ -311,7 +257,6 @@ void COCOMetaDataReader::read_all(const std::string &path)
 
         else if (0 == std::strcmp(key, "annotations"))
         {
-            //std::cout << "reach 253" << std::endl;
             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
             parser.EnterArray();
             while (parser.NextArrayValue())
@@ -352,13 +297,13 @@ void COCOMetaDataReader::read_all(const std::string &path)
                     }
                     else if (_mask && 0 == std::strcmp(internal_key, "segmentation"))
                     {
-                        //std::cout << "reach 295" << std::endl;
+
                         if (parser.PeekType() == kObjectType)
                         {
                             parser.EnterObject();
-                            //std::cout << "reach 299" << std::endl;
+
                             while(const char *key = parser.NextObjectKey()){
-                                //std::cout << "301--> " << key << std::endl;
+
                                 
                                 if (0 == std::strcmp(key, "size"))
                                 { 
@@ -371,21 +316,17 @@ void COCOMetaDataReader::read_all(const std::string &path)
                                     parser.NextArrayValue();
 
                                 }
-                                //const char *keyN = parser.NextObjectKey();
-                                // std::cout << "315--> " << keyN << std::endl;
+
                                 else if (0 == std::strcmp(key, "counts"))
                                 {
-                                    //std::cout << "reach 303" << std::endl;
                                     //parser.SkipArray();
                                     // 1. check what type it is string or uint and then take in and 
                                     // 2. store in a vector at last
                                     if (parser.PeekType() == kStringType) {
                                         rle_str = parser.GetString();
-                                        //std::cout << "rle str-"<<rle_str<<std::endl;
-                                        std::cout << " rleustr-- " << "reach" << std::endl;
+
                                     } else if (parser.PeekType() == kArrayType) {
                                         parser.EnterArray();
-                                        std::cout << " rleuint-- " << "reach" << std::endl;
                                         while (parser.NextArrayValue()) {
                                             int rleuint = parser.GetInt();
                                             
@@ -403,12 +344,12 @@ void COCOMetaDataReader::read_all(const std::string &path)
                         }
                         else
                         {
-                            //std::cout << "reach 322" << std::endl;
+
                             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
                             parser.EnterArray();
                             while (parser.NextArrayValue())
                             {
-                                //std::cout << "reach 350" << std::endl;
+
                                 polygon_size += 1;
                                 int vertex_count = 0;
                                 parser.EnterArray();
@@ -416,12 +357,11 @@ void COCOMetaDataReader::read_all(const std::string &path)
                                 {
                                     // mask is being read here
                                     double val = parser.GetDouble();
-                                    //std::cout << "val--"<< val << std::endl;
+
                                     mask.push_back(val);
                                     vertex_count += 1;
                                 }
                                 // vertex is counted and pushed
-                                //std::cout << "vertex_count--"<< vertex_count << std::endl;
                                 vertices_array.push_back(vertex_count);
                             }
                         }
@@ -450,33 +390,14 @@ void COCOMetaDataReader::read_all(const std::string &path)
                     polygon_count.push_back(polygon_size);
                     vertices_count.push_back(vertices_array);
 
-                    // RLESTR rtSTR;
-                    // RLEINT rtINT;
                     RLE RLEObject;
                     
-                    // std::cout << " !rle_str.empty() "<< !rle_str.empty() << std::endl;
-                    // std::cout << " !rle_uints.empty() "<< !rle_uints.empty() << std::endl;
-                    //rle_uints, rlestr , w , h should be copied to 
                     if (!rle_str.empty()) {
-                        // shared pointer is made with RLEMask type either string or unit is stored in annotation.rle_
-                        //std::cout << "reach 457-->" << std::endl;
                         rleFrString(&RLEObject, const_cast<char*>(rle_str.c_str()) , p_mask_h, p_mask_w);
-                        //std::cout << "height-->" << RLEObject.h << std::endl;
-                        //std::shared_ptr<RLESTR> pixelRLESTR = std::make_shared<RLESTR>(p_mask_h, p_mask_w, rle_str.c_str());
-                        // rtSTR.h = p_mask_h;
-                        // rtSTR.w = p_mask_w;
-                        // rtSTR.str_rle = rle_str.c_str();
-                        // add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count, rtSTR);
+
                     } else if (!rle_uints.empty()) {
-                        //auto counts_rle = std::span(rle_uints);
                         rleInit(&RLEObject, p_mask_h, p_mask_w, sizeof(rle_uints)/sizeof(rle_uints[0]), const_cast<uint*>(rle_uints.data()));
 
-                        //std::shared_ptr<RLEINT> pixelRLEINT = std::make_shared<RLEINT>(p_mask_h, p_mask_w, rle_uints);
-                        // std::cout << "reach 463-->" << std::endl;
-                        // rtINT.h = p_mask_h;
-                        // rtINT.w = p_mask_w;
-                        // rtINT.cnts = rle_uints;
-                        // add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count, rtINT);
                     } else {
                         std::cout << "Missing or invalid ``counts`` attribute." << std::endl;
                     }
